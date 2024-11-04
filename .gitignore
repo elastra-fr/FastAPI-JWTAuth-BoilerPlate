@@ -1,0 +1,10 @@
+/.venv/include/*
+/.venv/lib/*
+/.venv/bin/*
+/.venv/Scripts/*
+tests.http 
+.env
+/TodoApp/todos.db
+/__pycache__/*
+/.routers/__pycache__/*
+
