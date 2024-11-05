@@ -7,11 +7,12 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from jose import jwt, JWTError
 from models import Users
 from passlib.context import CryptContext
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 from starlette import status
 from typing import Annotated
 import os
+import re # Import the regular expression module
 
 # Create the router with the prefix /auth
 router = APIRouter(
@@ -34,12 +35,27 @@ oauth2_bearer = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 
 class CreateUserRequest(BaseModel):
-    username: str
-    email: str
-    first_name: str
-    last_name: str
-    password: str
-    role: str
+    username: str = Field (min_length=3, max_length=50)
+    email: str = Field (min_length=3, max_length=50)
+    first_name: str = Field (min_length=3, max_length=50)
+    last_name: str = Field (min_length=3, max_length=50)
+    password: str = Field (min_length=3, max_length=50, )
+    role: str = Field (min_length=3, max_length=50)
+
+    @field_validator("email")
+    def validate_email(cls, email):
+        if not re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", email):
+            raise ValueError("Invalid email address")
+        return email
+    
+    
+    
+    @field_validator("password")
+    def validate_password(cls, password):
+        if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$", password):
+            raise ValueError("Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter and one digit")
+        return password
+
 
 class JSONLoginRequest(BaseModel):
     username: str

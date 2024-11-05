@@ -2,6 +2,7 @@
 /.venv/lib/*
 /.venv/bin/*
 /.venv/Scripts/*
+/.venv/pyvenv.cfg
 tests.http 
 .env
 /TodoApp/todos.db
