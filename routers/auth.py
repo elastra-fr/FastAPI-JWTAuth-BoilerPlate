@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 from typing import Annotated
 import os
-import re # Import the regular expression module
+import re  # Import the regular expression module
 
 # Create the router with the prefix /auth
 router = APIRouter(
@@ -35,26 +35,28 @@ oauth2_bearer = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 
 class CreateUserRequest(BaseModel):
-    username: str = Field (min_length=3, max_length=50)
-    email: str = Field (min_length=3, max_length=50)
-    first_name: str = Field (min_length=3, max_length=50)
-    last_name: str = Field (min_length=3, max_length=50)
-    password: str = Field (min_length=3, max_length=50, )
-    role: str = Field (min_length=3, max_length=50)
+    username: str = Field(min_length=3, max_length=50)
+    email: str = Field(min_length=3, max_length=50)
+    first_name: str = Field(min_length=3, max_length=50)
+    last_name: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=3, max_length=50, )
+    role: str = Field(min_length=3, max_length=50)
 
-    @field_validator("email")
-    def validate_email(cls, email):
-        if not re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", email):
-            raise ValueError("Invalid email address")
-        return email
-    
-    
-    
-    @field_validator("password")
-    def validate_password(cls, password):
-        if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$", password):
-            raise ValueError("Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter and one digit")
-        return password
+# Field validator for the email and password
+
+@field_validator("email")
+def validate_email(cls, email):
+    if not re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", email):
+        raise ValueError("Invalid email address")
+    return email
+
+@field_validator("password")
+def validate_password(cls, password):
+    # Mise à jour de l'expression régulière pour accepter les caractères spéciaux
+    if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\d\s]).{8,}$", password):
+        raise ValueError(
+            "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character")
+    return password
 
 
 class JSONLoginRequest(BaseModel):
@@ -131,6 +133,16 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
 # Create a new user
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_user(db: db_dependency, create_user_request: CreateUserRequest):
+
+    # check if the user already exists with email address provided
+
+    user = db.query(Users).filter(
+        Users.email == create_user_request.email).first()
+
+    if user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="User with this email already exists")
+
     create_user_model = Users(
         username=create_user_request.username,
         email=create_user_request.email,
@@ -157,6 +169,8 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
     return {"access_token": token, "token_type": "bearer"}
 
 # Route pour l'authentification via JSON
+
+
 @router.post("/json-token", response_model=Token)
 async def login_with_json(json_request: JSONLoginRequest, db: db_dependency):
     user = authenticate_user(db, json_request.username, json_request.password)
