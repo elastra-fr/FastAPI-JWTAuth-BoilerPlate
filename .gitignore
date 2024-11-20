@@ -7,5 +7,6 @@ tests.http
 .env
 /TodoApp/todos.db
 /__pycache__/*
-/.routers/__pycache__/*
+/routers/__pycache__/*
+
 
